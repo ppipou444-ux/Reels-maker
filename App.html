@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ريلز ماكر — حوّل صورك لفيديو</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700;900&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --card: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #ff3cac;
+    --accent2: #784ba0;
+    --accent3: #2b86c5;
+    --text: #f0f0f8;
+    --muted: #888899;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Tajawal', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(255,60,172,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(43,134,197,0.10) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    padding: 3rem 0 2rem;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+    padding: 0.4rem 1.2rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+    animation: pulse-badge 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-badge {
+    0%,100%{box-shadow:0 0 0 0 rgba(255,60,172,0.3)}
+    50%{box-shadow:0 0 0 12px rgba(255,60,172,0)}
+  }
+
+  header h1 {
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    font-weight: 900;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.8rem;
+  }
+
+  header p { color: var(--muted); font-size: 1rem; font-weight: 300; }
+
+  .steps {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 1.5rem 0 2rem;
+    flex-wrap: wrap;
+  }
+
+  .step { display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:var(--muted); }
+
+  .step-num {
+    width:24px; height:24px;
+    border-radius:50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.75rem; font-weight:700; color:#fff; flex-shrink:0;
+  }
+
+  /* Upload */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 60px rgba(255,60,172,0.15);
+  }
+
+  .upload-icon { font-size: 3rem; margin-bottom: 0.8rem; display: block; }
+  .upload-zone h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .upload-zone p { color: var(--muted); font-size: 0.9rem; }
+  #fileInput { display: none; }
+
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.7rem;
+    margin-top: 1.2rem;
+  }
+
+  .img-thumb {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    background: var(--card);
+    border: 2px solid transparent;
+    cursor: grab;
+    transition: all 0.2s;
+    animation: pop-in 0.3s ease backwards;
+  }
+
+  @keyframes pop-in { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
+
+  .img-thumb:hover { border-color: var(--accent); transform: scale(1.03); }
+  .img-thumb img { width:100%; height:100%; object-fit:cover; }
+
+  .img-order {
+    position:absolute; top:5px; right:5px;
+    background:rgba(255,60,172,0.9);
+    color:#fff; width:20px; height:20px;
+    border-radius:50%; font-size:0.7rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .img-remove {
+    position:absolute; top:5px; left:5px;
+    background:rgba(0,0,0,0.75); color:#fff;
+    width:20px; height:20px; border-radius:50%;
+    font-size:0.85rem; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; opacity:0; transition:opacity 0.2s;
+  }
+  .img-thumb:hover .img-remove { opacity:1; }
+
+  /* Section divider */
+  .section-divider {
+    display:flex; align-items:center; gap:1rem;
+    margin: 2rem 0 1rem;
+    color:var(--muted); font-size:0.8rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:2px;
+  }
+  .section-divider::before,.section-divider::after {
+    content:''; flex:1; height:1px; background:var(--border);
+  }
+
+  /* Settings */
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media(max-width:600px) { .settings-grid { grid-template-columns: 1fr; } }
+
+  .setting-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.2rem;
+  }
+
+  .setting-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 0.8rem;
+  }
+
+  .option-group { display:flex; gap:0.5rem; flex-wrap:wrap; }
+
+  .opt-btn {
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .opt-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .opt-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff;
+  }
+
+  .text-input-row { display:flex; flex-direction:column; gap:0.6rem; }
+
+  .text-input-row input {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    color: var(--text);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .text-input-row input:focus { border-color: var(--accent); }
+  .text-input-row input::placeholder { color: var(--muted); }
+
+  .slider-row { display:flex; align-items:center; gap:0.8rem; margin-top:0.5rem; }
+  input[type=range] { flex:1; accent-color:var(--accent); cursor:pointer; }
+  .slider-val { font-size:0.85rem; font-weight:700; color:var(--accent); min-width:30px; text-align:center; }
+
+  /* ── Music Section ── */
+  .music-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.4rem;
+    grid-column: 1 / -1;
+  }
+
+  .music-search-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .music-search-row input {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
+    color: var(--text);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .music-search-row input:focus { border-color: var(--accent); }
+  .music-search-row input::placeholder { color: var(--muted); }
+
+  .music-search-btn {
+    padding: 0.65rem 1.2rem;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .music-search-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,60,172,0.3); }
+
+  /* Category tabs */
+  .music-cats {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .cat-btn {
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cat-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+  .cat-btn.active { background: var(--accent3); border-color: var(--accent3); color: #fff; }
+
+  /* Track list */
+  .track-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 260px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--card);
+  }
+
+  .track-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 0.9rem;
+    background: var(--card);
+    border-radius: 10px;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .track-item:hover { border-color: var(--accent3); }
+  .track-item.selected { border-color: var(--accent); background: rgba(255,60,172,0.08); }
+
+  .track-play-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    border: none;
+    color: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .track-play-btn:hover { transform: scale(1.1); }
+  .track-play-btn.playing { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+
+  .track-info { flex: 1; min-width: 0; }
+  .track-name { font-size: 0.88rem; font-weight: 700; truncate: ellipsis; white-space: nowrap; overflow: hidden; }
+  .track-meta { font-size: 0.73rem; color: var(--muted); margin-top: 0.15rem; }
+
+  .track-select-btn {
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .track-item.selected .track-select-btn {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .music-loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .music-loading .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 0.8rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .selected-track-bar {
+    display: none;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.8rem;
+    padding: 0.7rem 1rem;
+    background: rgba(255,60,172,0.08);
+    border: 1px solid rgba(255,60,172,0.3);
+    border-radius: 10px;
+    font-size: 0.85rem;
+  }
+  .selected-track-bar.visible { display: flex; }
+  .selected-track-bar span { flex: 1; }
+
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.7rem;
+  }
+  .volume-row label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+
+  /* Upload own music */
+  .own-music-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+  .own-music-row label {
+    font-size: 0.8rem; color: var(--muted);
+  }
+  .own-music-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .own-music-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+  #ownMusicInput { display: none; }
+
+  /* Generate */
+  .generate-btn {
+    width: 100%;
+    margin-top: 2rem;
+    padding: 1.1rem;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    background-size: 200% 200%;
+    color: #fff;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.3s;
+    animation: gradient-shift 4s ease infinite;
+  }
+
+  @keyframes gradient-shift {
+    0%,100%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+  }
+
+  .generate-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 60px rgba(255,60,172,0.35);
+  }
+
+  .generate-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* Preview */
+  .preview-section { margin-top: 2.5rem; display: none; }
+  .preview-section.visible { display: block; }
+
+  .preview-label {
+    font-size:0.8rem; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:2px; text-align:center; margin-bottom:1.2rem;
+  }
+
+  .phone-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .phone {
+    width: 220px; height: 390px;
+    border-radius: 36px;
+    background: #111;
+    border: 3px solid #333;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px #222;
+    flex-shrink: 0;
+  }
+
+  .phone-notch {
+    position:absolute; top:12px; left:50%; transform:translateX(-50%);
+    width:60px; height:8px; background:#222; border-radius:99px; z-index:10;
+  }
+
+  #videoCanvas { width:100%; height:100%; display:block; }
+
+  .preview-controls { display:flex; flex-direction:column; gap:0.8rem; align-items:flex-start; }
+
+  .ctrl-btn {
+    padding: 0.7rem 1.5rem;
+    border-radius: 10px; border: none;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 0.5rem;
+    white-space: nowrap;
+  }
+
+  .ctrl-play { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; width:100%; }
+  .ctrl-download { background:var(--surface); border:1.5px solid var(--border); color:var(--text); width:100%; }
+  .ctrl-btn:hover { transform:translateY(-2px); }
+
+  .progress-track { width:100%; height:4px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:0.3rem; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent3)); border-radius:99px; width:0%; transition:width 0.1s linear; }
+
+  .stats-row { display:flex; gap:1rem; margin-top:0.5rem; }
+  .stat { text-align:center; }
+  .stat-val { font-size:1.1rem; font-weight:900; background:linear-gradient(135deg,var(--accent),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .stat-lbl { font-size:0.7rem; color:var(--muted); margin-top:0.1rem; }
+
+  /* Now playing bar */
+  .now-playing {
+    display: none;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    background: rgba(43,134,197,0.12);
+    border: 1px solid rgba(43,134,197,0.3);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    width: 100%;
+  }
+  .now-playing.visible { display: flex; }
+  .eq-bars { display:flex; gap:2px; align-items:flex-end; height:16px; }
+  .eq-bar { width:3px; background:var(--accent3); border-radius:2px; animation:eq 0.8s ease-in-out infinite; }
+  .eq-bar:nth-child(2){animation-delay:0.1s}
+  .eq-bar:nth-child(3){animation-delay:0.2s}
+  .eq-bar:nth-child(4){animation-delay:0.15s}
+  @keyframes eq { 0%,100%{height:4px} 50%{height:14px} }
+
+  /* Toast */
+  .toast {
+    position:fixed; bottom:2rem; left:50%;
+    transform:translateX(-50%) translateY(100px);
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff; padding:0.8rem 2rem;
+    border-radius:999px; font-size:0.9rem; font-weight:700;
+    transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    z-index:999; pointer-events:none;
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="logo-badge">✨ Instagram Reels Maker</div>
+    <h1>حوّل صورك<br>إلى ريلز احترافي</h1>
+    <p>صور + موسيقى مجانية + تأثيرات = ريلز جاهز للنشر</p>
+  </header>
+
+  <div class="steps">
+    <div class="step"><div class="step-num">١</div><span>ارفع الصور</span></div>
+    <div class="step"><div class="step-num">٢</div><span>اختر موسيقى</span></div>
+    <div class="step"><div class="step-num">٣</div><span>اعرض وحمّل</span></div>
+  </div>
+
+  <!-- Upload -->
+  <div class="upload-zone" id="uploadZone">
+    <span class="upload-icon">📸</span>
+    <h3>اسحب صورك هنا أو اضغط للرفع</h3>
+    <p>يدعم JPG، PNG، WEBP — حتى ٢٠ صورة</p>
+    <input type="file" id="fileInput" multiple accept="image/*">
+  </div>
+
+  <div class="image-grid" id="imageGrid"></div>
+
+  <!-- Settings -->
+  <div class="section-divider">إعدادات الفيديو</div>
+
+  <div class="settings-grid">
+
+    <div class="setting-card">
+      <div class="setting-label">🎬 أسلوب الانتقال</div>
+      <div class="option-group" id="transitionOpts">
+        <button class="opt-btn active" data-val="fade">تلاشي</button>
+        <button class="opt-btn" data-val="slide">انزلاق</button>
+        <button class="opt-btn" data-val="zoom">تكبير</button>
+        <button class="opt-btn" data-val="flip">قلب</button>
+      </div>
+    </div>
+
+    <div class="setting-card">
+      <div class="setting-label">📐 نسبة الفيديو</div>
+      <div class="option-group" id="ratioOpts">
+        <button class="opt-btn active" data-val="9:16">ريلز 9:16</button>
+        <button class="opt-btn" data-val="1:1">بوست 1:1</button>
+        <button class="opt-btn" data-val="4:5">بورتريه 4:5</button>
+      </div>
+    </div>
+
+    <div class="setting-card">
+      <div class="setting-label">⏱ مدة كل صورة</div>
+      <div class="slider-row">
+        <input type="range" id="durationSlider" min="1" max="5" step="0.5" value="2.5">
+        <div class="slider-val" id="durationVal">2.5s</div>
+      </div>
+    </div>
+
+    <div class="setting-card">
+      <div class="setting-label">✨ تأثير الحركة</div>
+      <div class="option-group" id="effectOpts">
+        <button class="opt-btn active" data-val="kenburns">Ken Burns</button>
+        <button class="opt-btn" data-val="none">بدون</button>
+        <button class="opt-btn" data-val="shake">اهتزاز</button>
+      </div>
+    </div>
+
+    <div class="setting-card" style="grid-column:1/-1">
+      <div class="setting-label">✍️ نص على الفيديو</div>
+      <div class="text-input-row">
+        <input type="text" id="overlayTitle" placeholder="العنوان الرئيسي — مثال: جديدنا لهذا الموسم">
+        <input type="text" id="overlaySubtitle" placeholder="نص ثانوي — مثال: تسوّق الآن @متجرك">
+      </div>
+    </div>
+
+    <!-- Music Section -->
+    <div class="music-section" style="grid-column:1/-1">
+      <div class="setting-label">🎵 مكتبة الموسيقى المجانية</div>
+
+      <!-- Category tabs -->
+      <div class="music-cats" id="musicCats">
+        <button class="cat-btn active" data-cat="trending">🔥 ترند</button>
+        <button class="cat-btn" data-cat="upbeat">⚡ نشيط</button>
+        <button class="cat-btn" data-cat="chill">🌊 هادئ</button>
+        <button class="cat-btn" data-cat="arabic">🌙 عربي</button>
+        <button class="cat-btn" data-cat="cinematic">🎬 سينمائي</button>
+        <button class="cat-btn" data-cat="pop">🎤 بوب</button>
+      </div>
+
+      <!-- Search -->
+      <div class="music-search-row">
+        <input type="text" id="musicSearch" placeholder="ابحث عن موسيقى... مثال: happy, arabic, chill">
+        <button class="music-search-btn" id="searchMusicBtn">🔍 بحث</button>
+      </div>
+
+      <!-- Track list -->
+      <div class="track-list" id="trackList">
+        <div class="music-loading"><div class="spinner"></div>جاري تحميل المكتبة...</div>
+      </div>
+
+      <!-- Selected track -->
+      <div class="selected-track-bar" id="selectedTrackBar">
+        <span>🎵 <strong id="selectedTrackName">—</strong></span>
+        <button class="cat-btn" id="clearTrackBtn">✕ إزالة</button>
+      </div>
+
+      <!-- Volume -->
+      <div class="volume-row">
+        <label>🔊 مستوى الصوت</label>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.7">
+        <div class="slider-val" id="volumeVal">70%</div>
+      </div>
+
+      <!-- Own music -->
+      <div class="own-music-row">
+        <label>أو ارفع ملف صوتي خاص بك:</label>
+        <button class="own-music-btn" onclick="document.getElementById('ownMusicInput').click()">📂 رفع MP3</button>
+        <input type="file" id="ownMusicInput" accept="audio/*">
+        <span id="ownMusicName" style="font-size:0.78rem;color:var(--muted)"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <button class="generate-btn" id="generateBtn" disabled>
+    🎬 أنشئ الفيديو الترويجي
+  </button>
+
+  <!-- Preview -->
+  <div class="preview-section" id="previewSection">
+    <div class="preview-label">معاينة مباشرة</div>
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <canvas id="videoCanvas"></canvas>
+      </div>
+      <div class="preview-controls">
+        <div class="stats-row">
+          <div class="stat">
+            <div class="stat-val" id="statImages">0</div>
+            <div class="stat-lbl">صورة</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statDuration">0s</div>
+            <div class="stat-lbl">المدة</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statFPS">30</div>
+            <div class="stat-lbl">FPS</div>
+          </div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="now-playing" id="nowPlaying">
+          <div class="eq-bars">
+            <div class="eq-bar"></div><div class="eq-bar"></div>
+            <div class="eq-bar"></div><div class="eq-bar"></div>
+          </div>
+          <span id="nowPlayingName">—</span>
+        </div>
+
+        <button class="ctrl-btn ctrl-play" id="playPauseBtn">▶ تشغيل المعاينة</button>
+        <button class="ctrl-btn ctrl-download" id="downloadBtn">⬇ تحميل الفيديو (WebM)</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Hidden audio for preview -->
+<audio id="bgAudio" loop></audio>
+
+<script>
+// ─── Curated music library (CC0 / Royalty-Free) ──────────────────────────────
+// Tracks from Pixabay Music (royalty-free, no attribution required)
+const MUSIC_DB = {
+  trending: [
+    { id:1, name:'Aesthetic Dreams', artist:'LiQWYD', dur:'2:30', bpm:120, url:'https://cdn.pixabay.com/audio/2022/10/16/audio_12a68ee4a0.mp3', tags:'trending pop upbeat' },
+    { id:2, name:'Summer Vibes', artist:'Olexy', dur:'2:14', bpm:128, url:'https://cdn.pixabay.com/audio/2022/01/18/audio_d0c6ff1fbe.mp3', tags:'trending summer pop' },
+    { id:3, name:'Corporate Motivation', artist:'Lexin_Music', dur:'2:05', bpm:110, url:'https://cdn.pixabay.com/audio/2022/08/23/audio_d16737dc28.mp3', tags:'trending corporate upbeat' },
+    { id:4, name:'Happy Whistling', artist:'Tunetank', dur:'1:59', bpm:115, url:'https://cdn.pixabay.com/audio/2022/03/10/audio_1e54c21b0f.mp3', tags:'trending happy pop' },
+    { id:5, name:'Cinematic Impact', artist:'freesound_community', dur:'2:45', bpm:90, url:'https://cdn.pixabay.com/audio/2022/07/25/audio_dde5e97c27.mp3', tags:'trending cinematic epic' },
+  ],
+  upbeat: [
+    { id:6, name:'Upbeat Stomp', artist:'Music_For_Videos', dur:'2:10', bpm:135, url:'https://cdn.pixabay.com/audio/2022/06/09/audio_6b8c24e75a.mp3', tags:'upbeat energetic fast' },
+    { id:7, name:'Electronic Future', artist:'Music_For_Videos', dur:'3:00', bpm:128, url:'https://cdn.pixabay.com/audio/2022/01/13/audio_7d7b8b7e30.mp3', tags:'upbeat electronic dance' },
+    { id:8, name:'Happy Day', artist:'Penguinmusic', dur:'2:20', bpm:118, url:'https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3', tags:'upbeat happy bright' },
+  ],
+  chill: [
+    { id:9, name:'Lofi Study', artist:'Coma-Media', dur:'3:15', bpm:75, url:'https://cdn.pixabay.com/audio/2022/10/25/audio_946b8b5849.mp3', tags:'chill lofi relax study' },
+    { id:10, name:'Peaceful Morning', artist:'Purrple_Cat', dur:'2:58', bpm:70, url:'https://cdn.pixabay.com/audio/2022/01/20/audio_a9d97ac1b6.mp3', tags:'chill peaceful calm morning' },
+    { id:11, name:'Soft Piano', artist:'lesfm', dur:'2:30', bpm:65, url:'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3', tags:'chill piano soft gentle' },
+  ],
+  arabic: [
+    { id:12, name:'Oriental Groove', artist:'Olexy', dur:'2:40', bpm:95, url:'https://cdn.pixabay.com/audio/2022/08/04/audio_2dde668d05.mp3', tags:'arabic oriental eastern' },
+    { id:13, name:'Desert Wind', artist:'Music_For_Videos', dur:'3:10', bpm:85, url:'https://cdn.pixabay.com/audio/2022/10/03/audio_fbc0ddb55b.mp3', tags:'arabic desert cinematic eastern' },
+    { id:14, name:'Arabian Night', artist:'Tunetank', dur:'2:50', bpm:100, url:'https://cdn.pixabay.com/audio/2022/09/12/audio_a1e8b3f8c4.mp3', tags:'arabic night mysterious eastern' },
+  ],
+  cinematic: [
+    { id:15, name:'Epic Cinematic', artist:'SoundReality', dur:'3:30', bpm:80, url:'https://cdn.pixabay.com/audio/2022/05/23/audio_1ba8fa169e.mp3', tags:'cinematic epic dramatic' },
+    { id:16, name:'Inspiring Journey', artist:'Lexin_Music', dur:'2:55', bpm:88, url:'https://cdn.pixabay.com/audio/2022/04/27/audio_f6fc92fa27.mp3', tags:'cinematic inspiring emotional' },
+    { id:17, name:'Dramatic Tension', artist:'Music_For_Videos', dur:'2:20', bpm:72, url:'https://cdn.pixabay.com/audio/2022/07/01/audio_6c32c08b18.mp3', tags:'cinematic tension dramatic dark' },
+  ],
+  pop: [
+    { id:18, name:'Happy Pop', artist:'Lesfm', dur:'2:15', bpm:124, url:'https://cdn.pixabay.com/audio/2022/01/04/audio_b5c7ede09c.mp3', tags:'pop happy bright summer' },
+    { id:19, name:'Fashion Pop', artist:'Tunetank', dur:'2:40', bpm:120, url:'https://cdn.pixabay.com/audio/2022/11/22/audio_fbc39ad9c3.mp3', tags:'pop fashion trendy modern' },
+    { id:20, name:'Indie Pop Vibes', artist:'Olexy', dur:'3:00', bpm:116, url:'https://cdn.pixabay.com/audio/2022/06/25/audio_9437b62b38.mp3', tags:'pop indie vibes chill' },
+  ],
+};
+
+// ─── State ────────────────────────────────────────────
+const state = {
+  images: [], transition:'fade', ratio:'9:16',
+  duration:2.5, effect:'kenburns',
+  title:'', subtitle:'',
+  playing:false, frame:0, animFrame:null,
+  selectedTrack:null, volume:0.7,
+  ownMusicUrl:null,
+};
+
+// ─── DOM ──────────────────────────────────────────────
+const uploadZone  = document.getElementById('uploadZone');
+const fileInput   = document.getElementById('fileInput');
+const imageGrid   = document.getElementById('imageGrid');
+const generateBtn = document.getElementById('generateBtn');
+const previewSec  = document.getElementById('previewSection');
+const canvas      = document.getElementById('videoCanvas');
+const ctx         = canvas.getContext('2d');
+const playBtn     = document.getElementById('playPauseBtn');
+const dlBtn       = document.getElementById('downloadBtn');
+const progFill    = document.getElementById('progressFill');
+const toast       = document.getElementById('toast');
+const bgAudio     = document.getElementById('bgAudio');
+const nowPlaying  = document.getElementById('nowPlaying');
+const nowPlayingName = document.getElementById('nowPlayingName');
+
+// ─── Upload ───────────────────────────────────────────
+uploadZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => loadFiles(e.target.files));
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  loadFiles(e.dataTransfer.files);
+});
+
+function loadFiles(files) {
+  const imgs = Array.from(files).filter(f => f.type.startsWith('image/'));
+  imgs.slice(0, 20 - state.images.length).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => { state.images.push(img); renderGrid(); updateBtn(); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderGrid() {
+  imageGrid.innerHTML = '';
+  state.images.forEach((img, i) => {
+    const div = document.createElement('div');
+    div.className = 'img-thumb';
+    div.style.animationDelay = i * 0.05 + 's';
+    div.innerHTML = `<img src="${img.src}"><div class="img-order">${i+1}</div><div class="img-remove" data-i="${i}">✕</div>`;
+    imageGrid.appendChild(div);
+  });
+  imageGrid.querySelectorAll('.img-remove').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      state.images.splice(+btn.dataset.i, 1);
+      renderGrid(); updateBtn();
+    });
+  });
+}
+
+function updateBtn() { generateBtn.disabled = state.images.length < 1; }
+
+// ─── Options ──────────────────────────────────────────
+function setupOpts(containerId, stateKey) {
+  document.getElementById(containerId).querySelectorAll('.opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById(containerId).querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state[stateKey] = btn.dataset.val;
+    });
+  });
+}
+setupOpts('transitionOpts','transition');
+setupOpts('ratioOpts','ratio');
+setupOpts('effectOpts','effect');
+
+const durSlider = document.getElementById('durationSlider');
+const durVal    = document.getElementById('durationVal');
+durSlider.addEventListener('input', () => { state.duration = parseFloat(durSlider.value); durVal.textContent = state.duration + 's'; });
+
+document.getElementById('overlayTitle').addEventListener('input', e => state.title = e.target.value);
+document.getElementById('overlaySubtitle').addEventListener('input', e => state.subtitle = e.target.value);
+
+// ─── Volume ───────────────────────────────────────────
+const volSlider = document.getElementById('volumeSlider');
+const volVal    = document.getElementById('volumeVal');
+volSlider.addEventListener('input', () => {
+  state.volume = parseFloat(volSlider.value);
+  volVal.textContent = Math.round(state.volume * 100) + '%';
+  bgAudio.volume = state.volume;
+});
+
+// ─── Own music ────────────────────────────────────────
+document.getElementById('ownMusicInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (state.ownMusicUrl) URL.revokeObjectURL(state.ownMusicUrl);
+  state.ownMusicUrl = URL.createObjectURL(file);
+  state.selectedTrack = { name: file.name.replace(/\.[^.]+$/, ''), url: state.ownMusicUrl };
+  document.getElementById('ownMusicName').textContent = '✅ ' + state.selectedTrack.name;
+  document.getElementById('selectedTrackName').textContent = state.selectedTrack.name;
+  document.getElementById('selectedTrackBar').classList.add('visible');
+  renderTrackList(currentCat);
+  showToast('🎵 تم رفع الموسيقى!');
+});
+
+// ─── Music library ────────────────────────────────────
+let currentCat = 'trending';
+let currentlyPreviewingId = null;
+
+function renderTrackList(cat, filter='') {
+  const list = document.getElementById('trackList');
+  let tracks = (MUSIC_DB[cat] || []);
+  if (filter) {
+    const q = filter.toLowerCase();
+    tracks = Object.values(MUSIC_DB).flat().filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      t.tags.toLowerCase().includes(q) ||
+      t.artist.toLowerCase().includes(q)
+    );
+  }
+
+  if (!tracks.length) {
+    list.innerHTML = '<div class="music-loading">لا توجد نتائج 😕</div>';
+    return;
+  }
+
+  list.innerHTML = tracks.map(t => `
+    <div class="track-item ${state.selectedTrack?.id===t.id?'selected':''}" data-id="${t.id}">
+      <button class="track-play-btn ${currentlyPreviewingId===t.id?'playing':''}" data-url="${t.url}" data-id="${t.id}" title="معاينة">
+        ${currentlyPreviewingId===t.id?'⏸':'▶'}
+      </button>
+      <div class="track-info">
+        <div class="track-name">${t.name}</div>
+        <div class="track-meta">${t.artist} · ${t.dur} · ${t.bpm} BPM</div>
+      </div>
+      <button class="track-select-btn" data-id="${t.id}">
+        ${state.selectedTrack?.id===t.id?'✓ محدد':'اختر'}
+      </button>
+    </div>
+  `).join('');
+
+  // Play preview
+  list.querySelectorAll('.track-play-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = +btn.dataset.id;
+      const url = btn.dataset.url;
+      if (currentlyPreviewingId === id) {
+        bgAudio.pause();
+        currentlyPreviewingId = null;
+      } else {
+        bgAudio.src = url;
+        bgAudio.volume = state.volume;
+        bgAudio.play().catch(() => showToast('⚠️ فعّل الصوت في المتصفح'));
+        currentlyPreviewingId = id;
+      }
+      renderTrackList(currentCat, document.getElementById('musicSearch').value);
+    });
+  });
+
+  // Select track
+  list.querySelectorAll('.track-select-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = +btn.dataset.id;
+      const track = Object.values(MUSIC_DB).flat().find(t => t.id === id);
+      state.selectedTrack = track;
+      document.getElementById('selectedTrackName').textContent = track.name;
+      document.getElementById('selectedTrackBar').classList.add('visible');
+      renderTrackList(currentCat, document.getElementById('musicSearch').value);
+      showToast('✅ تم اختيار: ' + track.name);
+    });
+  });
+}
+
+// Category tabs
+document.getElementById('musicCats').querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('musicCats').querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCat = btn.dataset.cat;
+    document.getElementById('musicSearch').value = '';
+    renderTrackList(currentCat);
+  });
+});
+
+// Search
+document.getElementById('searchMusicBtn').addEventListener('click', () => {
+  const q = document.getElementById('musicSearch').value.trim();
+  renderTrackList(currentCat, q);
+});
+document.getElementById('musicSearch').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('searchMusicBtn').click();
+});
+
+// Clear track
+document.getElementById('clearTrackBtn').addEventListener('click', () => {
+  state.selectedTrack = null;
+  bgAudio.pause(); bgAudio.src = '';
+  currentlyPreviewingId = null;
+  document.getElementById('selectedTrackBar').classList.remove('visible');
+  renderTrackList(currentCat);
+});
+
+// Init
+renderTrackList('trending');
+
+// ─── Canvas sizing ────────────────────────────────────
+function getCanvasSize() {
+  const ratios = {'9:16':[9,16],'1:1':[1,1],'4:5':[4,5]};
+  const [w,h] = ratios[state.ratio]||[9,16];
+  const base = 390;
+  return { w: Math.round(base*w/h), h: base };
+}
+
+// ─── Generate ─────────────────────────────────────────
+generateBtn.addEventListener('click', () => {
+  const {w,h} = getCanvasSize();
+  canvas.width = w; canvas.height = h;
+  const n = state.images.length;
+  const totalSec = n * state.duration + (n-1) * 0.5;
+  document.getElementById('statImages').textContent = n;
+  document.getElementById('statDuration').textContent = totalSec.toFixed(1)+'s';
+  previewSec.classList.add('visible');
+  previewSec.scrollIntoView({behavior:'smooth',block:'center'});
+  stopAnimation();
+  state.frame = 0;
+  drawFrame(0);
+  showToast('✅ الفيديو جاهز للمعاينة!');
+});
+
+// ─── Animation ────────────────────────────────────────
+const FPS = 30;
+
+function stopAnimation() {
+  if (state.animFrame) cancelAnimationFrame(state.animFrame);
+  state.playing = false;
+  playBtn.textContent = '▶ تشغيل المعاينة';
+  bgAudio.pause();
+  nowPlaying.classList.remove('visible');
+}
+
+playBtn.addEventListener('click', () => {
+  if (state.playing) { stopAnimation(); return; }
+  state.playing = true;
+  playBtn.textContent = '⏸ إيقاف مؤقت';
+  state.frame = 0;
+
+  // Start music
+  if (state.selectedTrack) {
+    bgAudio.src = state.selectedTrack.url;
+    bgAudio.volume = state.volume;
+    bgAudio.currentTime = 0;
+    bgAudio.play().catch(()=>{});
+    nowPlayingName.textContent = state.selectedTrack.name;
+    nowPlaying.classList.add('visible');
+  }
+
+  animate();
+});
+
+function animate() {
+  if (!state.playing) return;
+  const n = state.images.length;
+  const framesPerImg = Math.round(state.duration * FPS);
+  const transFrames  = Math.round(0.5 * FPS);
+  const total = n * framesPerImg + (n-1) * transFrames;
+
+  drawFrame(state.frame / total);
+  progFill.style.width = (state.frame / total * 100) + '%';
+  state.frame++;
+  if (state.frame > total) {
+    state.frame = 0;
+    progFill.style.width = '0%';
+    bgAudio.currentTime = 0;
+  }
+  state.animFrame = requestAnimationFrame(animate);
+}
+
+// ─── Draw ─────────────────────────────────────────────
+function drawFrame(t) {
+  const w = canvas.width, h = canvas.height;
+  const n = state.images.length;
+  if (!n) return;
+
+  const transDur = 0.5;
+  const totalLen = n * state.duration + (n-1) * transDur;
+  const tNorm = t * totalLen;
+
+  let seg=0, localT=0, inTransition=false, transProgress=0, nextSeg=0;
+
+  for (let i=0; i<n; i++) {
+    const start = i * (state.duration + transDur);
+    const end   = start + state.duration;
+    const tEnd  = end + transDur;
+    if (tNorm >= start && tNorm < end) {
+      seg=i; localT=(tNorm-start)/state.duration; inTransition=false; break;
+    } else if (i<n-1 && tNorm>=end && tNorm<tEnd) {
+      seg=i; nextSeg=i+1; transProgress=(tNorm-end)/transDur; inTransition=true; break;
+    }
+  }
+
+  ctx.clearRect(0,0,w,h);
+
+  if (!inTransition) {
+    drawImage(ctx, state.images[seg], w, h, localT, state.effect);
+  } else {
+    drawTransition(ctx, state.images[seg], state.images[nextSeg], w, h, transProgress, state.transition);
+  }
+  drawOverlay(ctx, w, h);
+}
+
+function drawImage(ctx, img, w, h, t, effect) {
+  ctx.save();
+  const {sw,sh,sx,sy} = cover(img,w,h);
+  if (effect==='kenburns') {
+    const scale = 1 + t*0.06;
+    const ox=(w*scale-w)/2, oy=(h*scale-h)/2;
+    ctx.drawImage(img,sx,sy,sw,sh,-ox,-oy,w*scale,h*scale);
+  } else if (effect==='shake') {
+    ctx.drawImage(img,sx,sy,sw,sh, Math.sin(t*30)*3, 0, w, h);
+  } else {
+    ctx.drawImage(img,sx,sy,sw,sh,0,0,w,h);
+  }
+  ctx.restore();
+}
+
+function drawTransition(ctx, imgA, imgB, w, h, progress, type) {
+  const eased = easeInOut(progress);
+  if (type==='fade') {
+    drawImage(ctx,imgA,w,h,1,state.effect);
+    ctx.globalAlpha=eased; drawImage(ctx,imgB,w,h,0,state.effect); ctx.globalAlpha=1;
+  } else if (type==='slide') {
+    drawImage(ctx,imgA,w,h,1,'none');
+    ctx.save(); ctx.beginPath(); ctx.rect(w*eased,0,w,h); ctx.clip();
+    drawImage(ctx,imgB,w,h,0,'none'); ctx.restore();
+  } else if (type==='zoom') {
+    drawImage(ctx,imgA,w,h,1,'none');
+    ctx.globalAlpha=eased; ctx.save();
+    const s=0.7+eased*0.3; ctx.translate(w/2,h/2); ctx.scale(s,s); ctx.translate(-w/2,-h/2);
+    drawImage(ctx,imgB,w,h,0,'none'); ctx.restore(); ctx.globalAlpha=1;
+  } else if (type==='flip') {
+    if (eased<0.5) {
+      ctx.save(); ctx.translate(w/2,h/2); ctx.scale(1-eased*2,1); ctx.translate(-w/2,-h/2);
+      drawImage(ctx,imgA,w,h,1,'none'); ctx.restore();
+    } else {
+      ctx.save(); ctx.translate(w/2,h/2); ctx.scale((eased-0.5)*2,1); ctx.translate(-w/2,-h/2);
+      drawImage(ctx,imgB,w,h,0,'none'); ctx.restore();
+    }
+  }
+}
+
+function drawOverlay(ctx, w, h) {
+  if (!state.title && !state.subtitle) return;
+  const grad = ctx.createLinearGradient(0,h*0.55,0,h);
+  grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(1,'rgba(0,0,0,0.75)');
+  ctx.fillStyle=grad; ctx.fillRect(0,h*0.55,w,h*0.45);
+  if (state.title) {
+    ctx.font=`900 ${Math.round(w*0.09)}px Tajawal,sans-serif`;
+    ctx.fillStyle='#fff'; ctx.textAlign='center';
+    ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=10;
+    ctx.fillText(state.title, w/2, h-(state.subtitle?h*0.16:h*0.1));
+  }
+  if (state.subtitle) {
+    ctx.font=`400 ${Math.round(w*0.06)}px Tajawal,sans-serif`;
+    ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.textAlign='center';
+    ctx.shadowBlur=6; ctx.fillText(state.subtitle, w/2, h-h*0.06);
+  }
+  ctx.shadowBlur=0;
+}
+
+function cover(img, w, h) {
+  const ir=img.width/img.height, cr=w/h;
+  let sw,sh,sx,sy;
+  if (ir>cr){sh=img.height;sw=sh*cr;sx=(img.width-sw)/2;sy=0;}
+  else{sw=img.width;sh=sw/cr;sx=0;sy=(img.height-sh)/2;}
+  return {sw,sh,sx,sy};
+}
+
+function easeInOut(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
+
+// ─── Download ─────────────────────────────────────────
+dlBtn.addEventListener('click', async () => {
+  showToast('⏳ جاري تصدير الفيديو...');
+  dlBtn.disabled = true;
+  const stream = canvas.captureStream(FPS);
+  const recorder = new MediaRecorder(stream, {mimeType:'video/webm;codecs=vp9',videoBitsPerSecond:5_000_000});
+  const chunks = [];
+  recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, {type:'video/webm'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download='instagram-reel.webm'; a.click();
+    dlBtn.disabled = false;
+    showToast('✅ تم التحميل!');
+  };
+  recorder.start();
+
+  // Also start audio during export
+  if (state.selectedTrack) {
+    bgAudio.src = state.selectedTrack.url;
+    bgAudio.volume = state.volume;
+    bgAudio.currentTime = 0;
+    bgAudio.play().catch(()=>{});
+  }
+
+  const n = state.images.length;
+  const totalSec = n * state.duration + (n-1)*0.5;
+  const totalFrames = Math.round(totalSec * FPS);
+  for (let f=0; f<=totalFrames; f++) {
+    drawFrame(f/totalFrames);
+    await new Promise(r => setTimeout(r, 1000/FPS));
+  }
+  bgAudio.pause();
+  recorder.stop();
+});
+
+// ─── Toast ────────────────────────────────────────────
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2500);
+}
+
+// Init canvas
+canvas.width=220; canvas.height=390;
+ctx.fillStyle='#1a1a24'; ctx.fillRect(0,0,220,390);
+ctx.fillStyle='#444'; ctx.font='bold 15px Tajawal'; ctx.textAlign='center';
+ctx.fillText('ارفع صوراً لتبدأ', 110, 200);
+</script>
+</body>
+</html>
